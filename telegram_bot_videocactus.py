@@ -7,6 +7,7 @@ from os import path
 import random
 
 tokens = "TOKEN"
+test = 1
 botik = Updater(tokens, use_context=True)
 dispatcher = botik.dispatcher
 chat_stat = {
