@@ -9,7 +9,7 @@ import random
 tokens = "TOKEN"
 test = 1
 botik = Updater(tokens, use_context=True)
-dispatcher = sbotik.dispatcher
+dispatcher = botik.dispatcher
 chat_stat = {
         "hate":"on"
 }
