@@ -2,6 +2,7 @@ from subprocess import Popen
 from signal import SIGTERM
 from time import time, sleep
 from os import kill
+import sys
 
 # Define the command to run and its arguments
 command = ['python3', 'telegram_bot_videocactus.py']
@@ -20,3 +21,7 @@ while process.poll() is None and time() - start_time < timeout:
 # If the subprocess is still running, terminate it
 if process.poll() is None:
     kill(process.pid, SIGTERM)
+
+if process.returncode != 0:
+    print(f"Script failed with error code {process.returncode}")
+    sys.exit(1)
