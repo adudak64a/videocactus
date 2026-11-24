@@ -1,19 +1,25 @@
 #!/bin/python3
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-# pip3 install python-telegram-bot
+
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 
 import json
 from os import path
 import random
 
-tokens = "TOKEN"
-test = 1
-botik = Updater(tokens, use_context=True)
-dispatcher = botik.dispatcher
+TOKEN = "TOKEN"
+
 chat_stat = {
-        "hate":"on"
+    "hate": "on"
 }
-list_dirt_phrases = [
+
+list_dirt_phrase = [
     "Тебе по голові часто били?! Нєхуй свої відео сюди слати!",
     "Оааайййй бляяя, пробнік ти оператора невдалий...",
     "Ееееее.......фууу!",
@@ -53,81 +59,132 @@ list_dirt_phrases = [
     "Ти свої відео відправляєш сюди щоб перевірити хто першим лівне з чату?",
     "Ти як Людина Ікс, а твоя суперсила - викликати огиду в інших"
 ]
-start_text = "Привіт. Я бот який ненавидить усіх хто посилає відео-повідомлення у телеграмі, тому я буду принижувати таких персонажів по максимуму! 😎\n\nАле, раптом, якщо дуже буде потрібно, навіть не знаю при яких умовах, хейт можна ввимкнути командою /videohate_off...Навіть не знаю навіщо тобі це.\n\nВвімкнути назад можна командою /videohate_on\n\nДля активування задійте будь-яку з двох вищеперечислених команд."
 
-def main():
-    dispatcher.add_handler(MessageHandler(Filters.video_note, video_hate))
-    dispatcher.add_handler(CommandHandler("videohate_off", hate_off))
-    dispatcher.add_handler(CommandHandler("videohate_on", hate_on))
-    dispatcher.add_handler(CommandHandler("start", start_work))
-    dispatcher.add_handler(CommandHandler("ping", winter_2023_comming))
-    botik.start_polling(timeout = 30)
+start_text = """Привіт. Я бот який ненавидить усіх хто посилає відео-повідомлення у телеграмі...
 
-def start_work(update, context):
-    context.bot.send_message(update.effective_message.chat_id, text=start_text)
-
-def winter_2023_comming(update, context):
-    context.bot.send_message(update.effective_message.chat_id, text="Pong")
+/videohate_off
+/videohate_on
+"""
 
 def rand_mess():
-    return list_dirt_phrases[random.randint(0,len(list_dirt_phrases)-1)]
+    return random.choice(list_dirt_phrase)
 
-def new_member(update, context):
-    with open(chatfile,'r+') as fi:
-        data = json.load(fi)
-        fi.close()
-    update.message.reply_text('OK')
-    chats = str(update.effective_message.chat_id)
+
+async def start_work(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(start_text)
+
+
+async def winter_2023_comming(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Pong")
+
+
+def load_data():
+    with open(chatfile, 'r') as f:
+        return json.load(f)
+
+
+def save_data(data):
+    with open(chatfile, 'w') as f:
+        json.dump(data, f, indent=4)
+
+
+async def new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    data = load_data()
+
+    chats = str(update.effective_chat.id)
+
     data["chats_id"][chats] = chat_stat
-    file = open(chatfile,'w')
-    json.dump(data, file, indent = 4)
-    file.close()
 
-def video_hate(update, context):
-    chats = str(update.effective_message.chat_id)
-    with open(chatfile,'r+') as fi:
-        data = json.load(fi)
-        fi.close()
+    save_data(data)
+
+    await update.message.reply_text("OK")
+
+
+async def video_hate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    chats = str(update.effective_chat.id)
+
+    data = load_data()
+
     try:
+
         if data["chats_id"][chats]["hate"] == "on":
-            context.bot.send_message(update.effective_message.chat_id, reply_to_message_id = update.message.message_id, text=rand_mess())
-    except KeyError:
-        new_member(update, context)
-        video_hate(update, context)
 
-def hate_off(update, context):
-    chats = str(update.effective_message.chat_id)
-    with open(chatfile,'r+') as fi:
-        data = json.load(fi)
-        fi.close()
+            await update.message.reply_text(
+                rand_mess(),
+                reply_to_message_id=update.message.message_id
+            )
+
+    except KeyError:
+
+        await new_member(update, context)
+
+        await video_hate(update, context)
+
+
+async def hate_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    chats = str(update.effective_chat.id)
+
+    data = load_data()
+
     try:
+
         data["chats_id"][chats]["hate"] = "off"
-        file = open(chatfile,'w+')
-        json.dump(data, file, indent = 4)
-        file.close()
-    except KeyError:
-        new_member(update, context)
 
-def hate_on(update, context):
-    chats = str(update.effective_message.chat_id)
-    with open(chatfile,'r+') as fi:
-        data = json.load(fi)
-        fi.close()
+        save_data(data)
+
+    except KeyError:
+
+        await new_member(update, context)
+
+
+async def hate_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    chats = str(update.effective_chat.id)
+
+    data = load_data()
+
     try:
-        data["chats_id"][chats]["hate"] = "on"
-        file = open(chatfile,'w+')
-        json.dump(data, file, indent = 4)
-        file.close()
-    except KeyError:
-        new_member(update, context)
 
-#update.message.reply_to_message(text = "dsfgfdgffd")
+        data["chats_id"][chats]["hate"] = "on"
+
+        save_data(data)
+
+    except KeyError:
+
+        await new_member(update, context)
+
+
+def main():
+
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(
+        MessageHandler(filters.VIDEO_NOTE, video_hate)
+    )
+
+    app.add_handler(CommandHandler("videohate_off", hate_off))
+
+    app.add_handler(CommandHandler("videohate_on", hate_on))
+
+    app.add_handler(CommandHandler("start", start_work))
+
+    app.add_handler(CommandHandler("ping", winter_2023_comming))
+
+    app.run_polling()
+
 
 if __name__ == '__main__':
+
     chatfile = path.dirname(__file__)
+
     chatfile = path.join(chatfile, "chatfile.json")
-    if path.exists(chatfile) != True:
+
+    if not path.exists(chatfile):
+
         with open(chatfile, 'w') as f:
-            f.write('{\"chats_id\": {} }')
-        f.close()
+            f.write('{"chats_id": {}}')
+
     main()
